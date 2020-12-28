@@ -36,14 +36,14 @@ void readByte()
   delayMicroseconds(1);
   digitalWrite(_CS0, HIGH);
 }
-void writeByte()
+void writeByte(uint8_t data)
 {
   digitalWrite(_CS0, LOW);
   delayMicroseconds(1);
   
   SPI.transfer(0x02);            // status register
   SPI.transfer(0x10);            // address
-  SPI.transfer(0x55); // data
+  SPI.transfer(data); // data
 
   delayMicroseconds(1);
   digitalWrite(_CS0, HIGH);
@@ -55,6 +55,17 @@ void writeEnable()
   delayMicroseconds(1);
   
   SPI.transfer(0x06);            // status register
+
+  delayMicroseconds(1);
+  digitalWrite(_CS0, HIGH);
+}
+void writeDisable()
+{
+  uint8_t response;
+  digitalWrite(_CS0, LOW);
+  delayMicroseconds(1);
+  
+  SPI.transfer(0x04);            // status register
 
   delayMicroseconds(1);
   digitalWrite(_CS0, HIGH);
@@ -92,7 +103,12 @@ void loop()
   delayMicroseconds(1); // wait
   writeEnable(); // 0x06
   delayMicroseconds(1);
-  writeByte(); // 0x02
+  writeByte('X'); // 0x02
+  delay(5);
+  
+  writeEnable(); // 0x06
+  delayMicroseconds(1);
+  writeByte('A'); // 0x02
   delay(5);
   readByte(); // 0x03
   delayMicroseconds(10);
