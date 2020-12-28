@@ -21,65 +21,56 @@ SI = 5
 SCK= 6
 HOLD=7
 Vcc=8(Suppy)
+See the atmel datasheet
+SCK max
+1.8-5.5V = 5Mhz
+2.7-5.5V = 10Mhz
+4.5-5.5V = 20Mhz
 */
 #define _CS0 10
+#define WRSR 0x01
+#define WRITE 0x02
+#define READ 0x03
+#define WRDI 0x04
+#define RDSR 0x05
+#define WREN 0x06
 void readByte()
 {
   uint8_t response;
   digitalWrite(_CS0, LOW);
-  delayMicroseconds(1);
-  
-  SPI.transfer(0x03);            // status register
+  SPI.transfer(READ);            // read instruction
   SPI.transfer(0x10);            // address
   response = SPI.transfer(0x00); // read
-
-  delayMicroseconds(1);
   digitalWrite(_CS0, HIGH);
 }
 void writeByte(uint8_t data)
 {
   digitalWrite(_CS0, LOW);
-  delayMicroseconds(1);
-  
-  SPI.transfer(0x02);            // status register
-  SPI.transfer(0x10);            // address
-  SPI.transfer(data); // data
-
-  delayMicroseconds(1);
+  SPI.transfer(WRITE); // write instruction
+  SPI.transfer(0x10);  // address
+  SPI.transfer(data);  // data
   digitalWrite(_CS0, HIGH);
 }
 void writeEnable()
 {
-  uint8_t response;
   digitalWrite(_CS0, LOW);
-  delayMicroseconds(1);
-  
-  SPI.transfer(0x06);            // status register
-
-  delayMicroseconds(1);
+  SPI.transfer(WREN); // write enable
   digitalWrite(_CS0, HIGH);
 }
 void writeDisable()
 {
-  uint8_t response;
   digitalWrite(_CS0, LOW);
-  delayMicroseconds(1);
-  
-  SPI.transfer(0x04);            // status register
-
-  delayMicroseconds(1);
+  SPI.transfer(WRDI); // write disable instruction
   digitalWrite(_CS0, HIGH);
 }
 void readStatus()
 {
   uint8_t response;
   digitalWrite(_CS0, LOW);
-  delayMicroseconds(1);
-  SPI.transfer(0x05);            // status register
+  SPI.transfer(RDSR);            // status register
   response = SPI.transfer(0x00); // read response
   //Serial.print("Status Register=");
   //Serial.println(response, HEX);
-  delayMicroseconds(1);
   digitalWrite(_CS0, HIGH);
 }
 void setup()
@@ -93,21 +84,18 @@ void setup()
   pinMode(13, OUTPUT);
 
   digitalWrite(_CS0, HIGH);
-  SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   readStatus();
 }
 
 void loop()
 {
-  readStatus(); // 0x05
-  delayMicroseconds(1); // wait
-  writeEnable(); // 0x06
-  delayMicroseconds(1);
+  readStatus();         // 0x05
+  writeEnable();        // 0x06
   writeByte('X'); // 0x02
   delay(5);
-  
+
   writeEnable(); // 0x06
-  delayMicroseconds(1);
   writeByte('A'); // 0x02
   delay(5);
   readByte(); // 0x03
