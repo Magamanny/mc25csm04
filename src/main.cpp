@@ -7,8 +7,20 @@ SI -> 11(MOSI)
 SO -> 12(MISO)
 SCK -> 13(SCK)
 CS -> 10(GPIO)
-VCC -> +5V
-GND- > GND
+Vcc -> +5V
+Vss- > GND
+WP -> +5V Pull Up
+HOLD -> +5V Pull Up
+
+AT25040 SOIC pinout
+CS = 1
+SO = 2
+WP = 3
+Vss= 4(Ground)
+SI = 5
+SCK= 6
+HOLD=7
+Vcc=8(Suppy)
 */
 #define _CS0 10
 void readByte()
