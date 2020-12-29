@@ -153,6 +153,26 @@ void test2()
   Serial.print(F("Data="));
   Serial.println((char*)data_read);
 }
+int test3()
+{
+  uint8_t fail=false;
+  uint16_t addr=0; // this must be a multiple of 8, for page write
+  uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
+  uint8_t data_read[10]={0}; // creat and init with zero
+  writePage(addr,data_write);
+  readString(addr,data_read,8);
+  for(int i=0;i<8;i++)
+  {
+    if(data_write[i]!=data_read[i])
+    {
+      fail=true;
+      break; // failed
+    }
+  }
+  return fail;
+}
+int failCount;
+const int testCount=1000;
 void setup()
 {
   // put your setup code here, to run once:
@@ -171,8 +191,24 @@ void setup()
 
 void loop()
 {
-  test2();
-  delayMicroseconds(1);
+  //test2();
+  //delayMicroseconds(1);
+  failCount=0;
+  for(int i=0;i<testCount;i++)
+  {
+    if(test3()) // if test failed
+    {
+      failCount++;
+    }
+  }
+  Serial.println(F("-------Result-----"));
+  Serial.print(F("Total Test="));
+  Serial.println(testCount);
+  Serial.print(F("Failed Test="));
+  Serial.println(failCount);
+  Serial.print(F("Error %="));
+  // Serial.println((failCount/100.0)); // this line for some resone causes the code to hold
+  delay(1000); // 1 sec delay
   /*
   writeByte(0x1cc,'X'); // 0x02
   writeByte(0x1cc,'A'); // 0x02
