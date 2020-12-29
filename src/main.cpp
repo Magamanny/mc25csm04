@@ -112,7 +112,7 @@ void readString(uint16_t addr, uint8_t *data, uint16_t len)
   digitalWrite(_CS0, HIGH);
 }
 // 8 byte for data 1 for the null terminator
-void writePage(uint16_t addr, uint8_t data[9])
+void writePage(uint16_t addr, uint8_t data[8])
 {
   uint8_t addr_low, addr_high;
   // break the address in 8 bit cunck
@@ -130,7 +130,6 @@ void writePage(uint16_t addr, uint8_t data[9])
   {
     SPI.transfer(data[i]);                     // data
   }
-  data[8]=0;
   digitalWrite(_CS0, HIGH);
   delay(5);
 }
