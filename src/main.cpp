@@ -22,7 +22,7 @@ SCK= 6
 HOLD=7
 Vcc=8(Suppy)
 See the atmel datasheet
-SCK max
+SCK max, tested on 4MHZ on 8Mhz no response(it may be due to external wiring)
 1.8-5.5V = 5Mhz
 2.7-5.5V = 10Mhz
 4.5-5.5V = 20Mhz
@@ -92,9 +92,69 @@ void writeByte(uint16_t addr, uint8_t data)
   digitalWrite(_CS0, HIGH);
   delay(5);
 }
-void setup()
+// read string of data for specific length
+void readString(uint16_t addr, uint8_t *data, uint16_t len)
+{
+  uint8_t addr_low, addr_high;
+  // break the address in 8 bit cunck
+  addr_high = 0xff & (addr >> 8);
+  addr_low = 0xff & (addr);
+  // only single bit in the high address
+  addr_high = addr_high & 0x01;
+  digitalWrite(_CS0, LOW);
+  SPI.transfer(READ | (addr_high<<3));// read instruction
+  SPI.transfer(addr_low);            // address
+  // read the sting
+  for(uint16_t i=0;i<len;i++)
+  {
+    data[i] = SPI.transfer(0x00); // read
+  }
+  digitalWrite(_CS0, HIGH);
+}
+// 8 byte for data 1 for the null terminator
+void writePage(uint16_t addr, uint8_t data[9])
+{
+  uint8_t addr_low, addr_high;
+  // break the address in 8 bit cunck
+  addr_high = 0xff & (addr >> 8);
+  addr_low = 0xff & (addr);
+  // only single bit in the high address
+  addr_high = addr_high & 0x01;
+  writeEnable();
+  digitalWrite(_CS0, LOW);
+  SPI.transfer(WRITE | (addr_high << 3)); // write instruction
+  SPI.transfer(addr_low);                 // address
+  // the internal address is increased automatically, the lower 3 bit
+  // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
+  for(int i=0;i<8;i++)
+  {
+    SPI.transfer(data[i]);                     // data
+  }
+  data[8]=0;
+  digitalWrite(_CS0, HIGH);
+  delay(5);
+}
+void test1()
 {
   uint8_t data;
+  writeByte(0x1cc,'X'); // 0x02
+  writeByte(0x1cc,'A'); // 0x02
+  data = readByte(0x1cc); // 0x03
+  Serial.print(F("Data="));
+  Serial.println((char)data);
+}
+void test2()
+{
+  uint16_t addr=0; // this must be a multiple of 8, for page write
+  uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
+  uint8_t data_read[10]={0}; // creat and init with zero
+  writePage(addr,data_write);
+  readString(addr,data_read,8);
+  Serial.print(F("Data="));
+  Serial.println((char*)data_read);
+}
+void setup()
+{
   // put your setup code here, to run once:
   Serial.begin(9600);
   Serial.println(F("EEPROM POC, for PSO, IC used AT25040"));
@@ -107,15 +167,12 @@ void setup()
   SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   readStatus();
   // one time test
-  writeByte(0x1cc,'X'); // 0x02
-  writeByte(0x1cc,'A'); // 0x02
-  data = readByte(0x1cc); // 0x03
-  Serial.print(F("Data="));
-  Serial.println((char)data);
 }
 
 void loop()
 {
+  test2();
+  delayMicroseconds(1);
   /*
   writeByte(0x1cc,'X'); // 0x02
   writeByte(0x1cc,'A'); // 0x02
