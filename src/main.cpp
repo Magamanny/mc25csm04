@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 /*
+// IDE used Platform io
 Pin connection
 AT25040 | Arduino Uno
 SI -> 11(MOSI)
@@ -158,6 +159,7 @@ int test3()
   uint16_t addr=0; // this must be a multiple of 8, for page write
   uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
   uint8_t data_read[10]={0}; // creat and init with zero
+  data_write[7] = rand()%255;
   writePage(addr,data_write);
   readString(addr,data_read,8);
   for(int i=0;i<8;i++)
