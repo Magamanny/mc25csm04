@@ -28,7 +28,7 @@ SCK max, tested on 4MHZ on 8Mhz no response(it may be due to external wiring)
 2.7-5.5V = 10Mhz
 4.5-5.5V = 20Mhz
 */
-#define _CS0 10
+#define CS0 10
 
 #define WRSR 0x01
 #define WRITE 0x02
@@ -40,26 +40,26 @@ SCK max, tested on 4MHZ on 8Mhz no response(it may be due to external wiring)
 // Write function takes 5ms(this is blocking)
 void writeEnable()
 {
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(WREN); // write enable
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
 }
 void writeDisable()
 {
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(WRDI); // write disable instruction
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
 }
 // status is unclear..
 void readStatus()
 {
   uint8_t response;
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(RDSR);            // status register
   response = SPI.transfer(0x00); // read response
   //Serial.print("Status Register=");
   //Serial.println(response, HEX);
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
 }
 uint8_t readByte(uint16_t addr)
 {
@@ -70,11 +70,11 @@ uint8_t readByte(uint16_t addr)
   addr_low = 0xff & (addr);
   // only single bit in the high address
   addr_high = addr_high & 0x01;
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(READ | (addr_high<<3));// read instruction
   SPI.transfer(addr_low);            // address
   response = SPI.transfer(0x00); // read
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
   return response;
 }
 void writeByte(uint16_t addr, uint8_t data)
@@ -86,11 +86,11 @@ void writeByte(uint16_t addr, uint8_t data)
   // only single bit in the high address
   addr_high = addr_high & 0x01;
   writeEnable();
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(WRITE | (addr_high << 3)); // write instruction
   SPI.transfer(addr_low);                 // address
   SPI.transfer(data);                     // data
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
   delay(5);
 }
 // read string of data for specific length
@@ -102,7 +102,7 @@ void readString(uint16_t addr, uint8_t *data, uint16_t len)
   addr_low = 0xff & (addr);
   // only single bit in the high address
   addr_high = addr_high & 0x01;
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(READ | (addr_high<<3));// read instruction
   SPI.transfer(addr_low);            // address
   // read the sting
@@ -110,7 +110,7 @@ void readString(uint16_t addr, uint8_t *data, uint16_t len)
   {
     data[i] = SPI.transfer(0x00); // read
   }
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
 }
 // 8 byte for data 1 for the null terminator
 void writePage(uint16_t addr, uint8_t data[8])
@@ -122,7 +122,7 @@ void writePage(uint16_t addr, uint8_t data[8])
   // only single bit in the high address
   addr_high = addr_high & 0x01;
   writeEnable();
-  digitalWrite(_CS0, LOW);
+  digitalWrite(CS0, LOW);
   SPI.transfer(WRITE | (addr_high << 3)); // write instruction
   SPI.transfer(addr_low);                 // address
   // the internal address is increased automatically, the lower 3 bit
@@ -131,7 +131,7 @@ void writePage(uint16_t addr, uint8_t data[8])
   {
     SPI.transfer(data[i]);                     // data
   }
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
   delay(5);
 }
 void test1()
@@ -179,12 +179,12 @@ void setup()
   // put your setup code here, to run once:
   Serial.begin(9600);
   Serial.println(F("EEPROM POC, for PSO, IC used AT25040"));
-  pinMode(_CS0, OUTPUT);
+  pinMode(CS0, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
 
-  digitalWrite(_CS0, HIGH);
+  digitalWrite(CS0, HIGH);
   SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   readStatus();
   // one time test
