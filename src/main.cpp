@@ -96,17 +96,17 @@ void writeByte(uint32_t addr, uint8_t data)
   delay(5);
 }
 // read string of data for specific length
-void readString(uint16_t addr, uint8_t *data, uint16_t len)
+void readString(uint32_t addr, uint8_t *data, uint16_t len)
 {
-  uint8_t addr_low, addr_high;
-  // break the address in 8 bit cunck
-  addr_high = 0xff & (addr >> 8);
-  addr_low = 0xff & (addr);
-  // only single bit in the high address
-  addr_high = addr_high & 0x01;
+  uint8_t addr8;
   digitalWrite(CS0, LOW);
-  SPI.transfer(READ | (addr_high<<3));// read instruction
-  SPI.transfer(addr_low);            // address
+  SPI.transfer(READ);// read instruction
+  addr8 = addr>>16;
+  SPI.transfer(addr8);                 // msb
+  addr8 = addr>>8;
+  SPI.transfer(addr8);                 // mid
+  addr8 = addr;
+  SPI.transfer(addr8);                 // lsb
   // read the sting
   for(uint16_t i=0;i<len;i++)
   {
@@ -115,21 +115,22 @@ void readString(uint16_t addr, uint8_t *data, uint16_t len)
   digitalWrite(CS0, HIGH);
 }
 // 8 byte for data 1 for the null terminator
-void writePage(uint16_t addr, uint8_t data[8])
+// use block of 4bytes and write in cunch of 256bytes(as page size is 256bytes)
+void writePage(uint32_t addr, uint8_t data[256])
 {
-  uint8_t addr_low, addr_high;
-  // break the address in 8 bit cunck
-  addr_high = 0xff & (addr >> 8);
-  addr_low = 0xff & (addr);
-  // only single bit in the high address
-  addr_high = addr_high & 0x01;
+  uint8_t addr8;
   writeEnable();
   digitalWrite(CS0, LOW);
-  SPI.transfer(WRITE | (addr_high << 3)); // write instruction
-  SPI.transfer(addr_low);                 // address
+  SPI.transfer(WRITE); // write instruction
+  addr8 = addr>>16;
+  SPI.transfer(addr8);                 // msb
+  addr8 = addr>>8;
+  SPI.transfer(addr8);                 // mid
+  addr8 = addr;
+  SPI.transfer(addr8);                 // lsb
   // the internal address is increased automatically, the lower 3 bit
   // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
-  for(int i=0;i<8;i++)
+  for(int i=0;i<256;i++)
   {
     SPI.transfer(data[i]);                     // data
   }
@@ -147,13 +148,19 @@ void test1()
   Serial.print(F("Data="));
   Serial.println((char)data);
 }
+// page write test
 void test2()
 {
-  uint16_t addr=0; // this must be a multiple of 8, for page write
-  uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
-  uint8_t data_read[10]={0}; // creat and init with zero
+  uint32_t addr=262144; // this must be a multiple of 8, for page write
+  static uint8_t data_write[256]=
+  "Take this kiss upon the brow!"
+  "And, in parting from you now,"
+  "Thus much let me avow --"
+  "You are not wrong, who deem"
+  "That my days have been a dream";
+  static uint8_t data_read[256]={0}; // creat and init with zero
   writePage(addr,data_write);
-  readString(addr,data_read,8);
+  readString(addr,data_read,256);
   Serial.print(F("Data="));
   Serial.println((char*)data_read);
 }
@@ -189,14 +196,14 @@ void setup()
   pinMode(13, OUTPUT);
 
   digitalWrite(CS0, HIGH);
-  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   readStatus();
   // one time test
 }
 
 void loop()
 {
-  test1();
+  test2();
   //test2();
   //delayMicroseconds(1);
   /*
