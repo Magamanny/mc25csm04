@@ -3,7 +3,8 @@
 /*
 // IDE used Platform io
 Pin connection
-AT25040 | Arduino Uno
+25csm04 has same pin out as the at25040
+25CSM04 | Arduino Uno
 SI -> 11(MOSI)
 SO -> 12(MISO)
 SCK -> 13(SCK)
@@ -13,7 +14,7 @@ Vss- > GND
 WP -> +5V Pull Up
 HOLD -> +5V Pull Up
 
-AT25040 SOIC pinout
+25CSM04 SOIC pinout
 CS = 1
 SO = 2
 WP = 3
@@ -22,14 +23,13 @@ SI = 5
 SCK= 6
 HOLD=7
 Vcc=8(Suppy)
-See the atmel datasheet
+See microchip datasheet
 SCK max, tested on 4MHZ on 8Mhz no response(it may be due to external wiring)
-1.8-5.5V = 5Mhz
-2.7-5.5V = 10Mhz
-4.5-5.5V = 20Mhz
+if VCC>=2.5 = 5Mhz
+if VCC>=3.0 = 8Mhz ,8Mhz ok on 5 volt
 */
 #define CS0 10
-
+// the register name is also similar to at25040
 #define WRSR 0x01
 #define WRITE 0x02
 #define READ 0x03
@@ -61,35 +61,37 @@ void readStatus()
   //Serial.println(response, HEX);
   digitalWrite(CS0, HIGH);
 }
-uint8_t readByte(uint16_t addr)
+uint8_t readByte(uint32_t addr)
 {
+  uint8_t addr8;
   uint8_t response;
-  uint8_t addr_low, addr_high;
-  // break the address in 8 bit cunck
-  addr_high = 0xff & (addr >> 8);
-  addr_low = 0xff & (addr);
-  // only single bit in the high address
-  addr_high = addr_high & 0x01;
   digitalWrite(CS0, LOW);
-  SPI.transfer(READ | (addr_high<<3));// read instruction
-  SPI.transfer(addr_low);            // address
+  SPI.transfer(READ);// read instruction
+  // address
+  addr8 = addr>>16;
+  SPI.transfer(addr8);                 // msb
+  addr8 = addr>>8;
+  SPI.transfer(addr8);                 // mid
+  addr8 = addr;
+  SPI.transfer(addr8);                 // lsb
   response = SPI.transfer(0x00); // read
   digitalWrite(CS0, HIGH);
   return response;
 }
-void writeByte(uint16_t addr, uint8_t data)
+// address is 19 bit, but 24bit are send via spi, see data  
+void writeByte(uint32_t addr, uint8_t data)
 {
-  uint8_t addr_low, addr_high;
-  // break the address in 8 bit cunck
-  addr_high = 0xff & (addr >> 8);
-  addr_low = 0xff & (addr);
-  // only single bit in the high address
-  addr_high = addr_high & 0x01;
+  uint8_t addr8;
   writeEnable();
   digitalWrite(CS0, LOW);
-  SPI.transfer(WRITE | (addr_high << 3)); // write instruction
-  SPI.transfer(addr_low);                 // address
-  SPI.transfer(data);                     // data
+  SPI.transfer(WRITE); // write instruction
+  addr8 = addr>>16;
+  SPI.transfer(addr8);                 // msb
+  addr8 = addr>>8;
+  SPI.transfer(addr8);                 // mid
+  addr8 = addr;
+  SPI.transfer(addr8);                 // lsb
+  SPI.transfer(data);                  // data
   digitalWrite(CS0, HIGH);
   delay(5);
 }
@@ -138,6 +140,8 @@ void test1()
 {
   uint8_t data;
   writeByte(0x1cc,'X'); // 0x02
+  data = readByte(0x1cc); // 0x03
+  Serial.println((char)data);
   writeByte(0x1cc,'A'); // 0x02
   data = readByte(0x1cc); // 0x03
   Serial.print(F("Data="));
@@ -156,7 +160,7 @@ void test2()
 int test3()
 {
   uint8_t fail=false;
-  uint16_t addr=0; // this must be a multiple of 8, for page write
+  uint16_t addr=8; // this must be a multiple of 8, for page write
   uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
   uint8_t data_read[10]={0}; // creat and init with zero
   data_write[7] = rand()%255;
@@ -185,15 +189,17 @@ void setup()
   pinMode(13, OUTPUT);
 
   digitalWrite(CS0, HIGH);
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   readStatus();
   // one time test
 }
 
 void loop()
 {
+  test1();
   //test2();
   //delayMicroseconds(1);
+  /*
   failCount=0;
   for(int i=0;i<testCount;i++)
   {
@@ -208,6 +214,7 @@ void loop()
   Serial.print(F("Failed Test="));
   Serial.println(failCount);
   Serial.print(F("Error %="));
+  */
   // Serial.println((failCount/100.0)); // this line for some resone causes the code to hold
   delay(1000); // 1 sec delay
   /*
