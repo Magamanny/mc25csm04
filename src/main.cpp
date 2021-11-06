@@ -14,6 +14,16 @@ Vss- > GND
 WP -> +5V Pull Up
 HOLD -> +5V Pull Up
 
+25CSM04 | Blue pill
+SI -> PA7(MOSI)
+SO -> PA6(MISO)
+SCK -> PA5(SCK)
+CS -> A0(GPIO)
+Vcc -> +3.3V
+Vss- > GND
+WP -> +3.3V Pull Up
+HOLD -> +3.3V Pull Up
+
 25CSM04 SOIC pinout
 CS = 1
 SO = 2
@@ -28,7 +38,18 @@ SCK max, tested on 4MHZ on 8Mhz no response(it may be due to external wiring)
 if VCC>=2.5 = 5Mhz
 if VCC>=3.0 = 8Mhz ,8Mhz ok on 5 volt
 */
+// uno
+/*
 #define CS0 10
+#define MOSI 11
+#define MISO 12
+#define SCK 13
+*/
+// blue pill
+#define CS0 PA4
+#define MOSI PA5
+#define MISO PA6
+#define SCK PA7
 // the register name is also similar to at25040
 #define WRSR 0x01
 #define WRITE 0x02
@@ -36,36 +57,64 @@ if VCC>=3.0 = 8Mhz ,8Mhz ok on 5 volt
 #define WRDI 0x04
 #define RDSR 0x05
 #define WREN 0x06
+void chipSelect()
+{
+	// CS high time, 200ns
+	for(int i=0;i<50;i++)
+	{
+	}
+  digitalWrite(CS0, LOW);
+	// CS setup time, 200ns(min for 3.3v), try to perform 1us delay
+	for(int i=0;i<50;i++)
+	{
+	}
+}
+void chipDeselect()
+{
+	// CS hold time, 200ns(min for 3.3v), try to perform 1us delay
+	for(int i=0;i<50;i++)
+	{
+	}
+  digitalWrite(CS0, HIGH);
+}
 // Read function is quick
 // Write function takes 5ms(this is blocking)
 void writeEnable()
 {
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(WREN); // write enable
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
 }
 void writeDisable()
 {
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(WRDI); // write disable instruction
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
 }
 // status is unclear..
 void readStatus()
 {
-  uint8_t response;
-  digitalWrite(CS0, LOW);
+  uint8_t rsp;
+  chipSelect();
   SPI.transfer(RDSR);            // status register
-  response = SPI.transfer(0x00); // read response
-  //Serial.print("Status Register=");
-  //Serial.println(response, HEX);
-  digitalWrite(CS0, HIGH);
+  rsp = SPI.transfer(0x00); // read response
+  Serial.print("Status Register=");
+  Serial.println(rsp, HEX);
+  chipDeselect();
+}
+void writeStatus(uint8_t st)
+{
+  uint8_t rsp;
+  chipSelect();
+  SPI.transfer(WRSR);            // status register
+  SPI.transfer(st); // read response
+  chipDeselect();
 }
 uint8_t readByte(uint32_t addr)
 {
   uint8_t addr8;
   uint8_t response;
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(READ);// read instruction
   // address
   addr8 = addr>>16;
@@ -75,7 +124,7 @@ uint8_t readByte(uint32_t addr)
   addr8 = addr;
   SPI.transfer(addr8);                 // lsb
   response = SPI.transfer(0x00); // read
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
   return response;
 }
 // address is 19 bit, but 24bit are send via spi, see data  
@@ -83,7 +132,7 @@ void writeByte(uint32_t addr, uint8_t data)
 {
   uint8_t addr8;
   writeEnable();
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(WRITE); // write instruction
   addr8 = addr>>16;
   SPI.transfer(addr8);                 // msb
@@ -92,14 +141,14 @@ void writeByte(uint32_t addr, uint8_t data)
   addr8 = addr;
   SPI.transfer(addr8);                 // lsb
   SPI.transfer(data);                  // data
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
   delay(5);
 }
 // read string of data for specific length
 void readString(uint32_t addr, uint8_t *data, uint16_t len)
 {
   uint8_t addr8;
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(READ);// read instruction
   addr8 = addr>>16;
   SPI.transfer(addr8);                 // msb
@@ -112,15 +161,16 @@ void readString(uint32_t addr, uint8_t *data, uint16_t len)
   {
     data[i] = SPI.transfer(0x00); // read
   }
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
 }
 // 8 byte for data 1 for the null terminator
 // use block of 4bytes and write in cunch of 256bytes(as page size is 256bytes)
-void writePage(uint32_t addr, uint8_t data[256])
+void writePage(uint32_t addr, uint8_t data[256],uint32_t len)
 {
   uint8_t addr8;
+  uint8_t cor;
   writeEnable();
-  digitalWrite(CS0, LOW);
+  chipSelect();
   SPI.transfer(WRITE); // write instruction
   addr8 = addr>>16;
   SPI.transfer(addr8);                 // msb
@@ -130,22 +180,24 @@ void writePage(uint32_t addr, uint8_t data[256])
   SPI.transfer(addr8);                 // lsb
   // the internal address is increased automatically, the lower 3 bit
   // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
-  for(int i=0;i<256;i++)
+  cor = addr%256;// handle if addr is not a multiple of 8
+  for(int i=0;i<(len-cor);i++)
   {
     SPI.transfer(data[i]);                     // data
   }
-  digitalWrite(CS0, HIGH);
-  delay(5);
+  chipDeselect();
+  delay(10);
 }
 void test1()
 {
   uint8_t data;
   writeByte(0x1cc,'X'); // 0x02
   data = readByte(0x1cc); // 0x03
+  Serial.print(F("Data1="));
   Serial.println((char)data);
   writeByte(0x1cc,'A'); // 0x02
   data = readByte(0x1cc); // 0x03
-  Serial.print(F("Data="));
+  Serial.print(F("Data2="));
   Serial.println((char)data);
 }
 // page write test
@@ -159,7 +211,7 @@ void test2()
   "You are not wrong, who deem"
   "That my days have been a dream";
   static uint8_t data_read[256]={0}; // creat and init with zero
-  writePage(addr,data_write);
+  writePage(addr,data_write,256);
   readString(addr,data_read,256);
   Serial.print(F("Data="));
   Serial.println((char*)data_read);
@@ -171,7 +223,7 @@ int test3()
   uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
   uint8_t data_read[10]={0}; // creat and init with zero
   data_write[7] = rand()%255;
-  writePage(addr,data_write);
+  writePage(addr,data_write,8);
   readString(addr,data_read,8);
   for(int i=0;i<8;i++)
   {
@@ -189,13 +241,13 @@ void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  Serial.println(F("EEPROM POC, for PSO, IC used AT25040"));
+  Serial.println(F("EEPROM POC, for PSO, IC used 25CSM04"));
   pinMode(CS0, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
+  pinMode(MOSI, OUTPUT);
+  pinMode(MISO, OUTPUT);
+  pinMode(SCK, OUTPUT);
 
-  digitalWrite(CS0, HIGH);
+  chipDeselect();
   SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   readStatus();
   // one time test
@@ -203,10 +255,17 @@ void setup()
 
 void loop()
 {
+  uint8_t data[100];
+  readStatus();
+  writeStatus(0x80);
   test2();
+  readString(0,data,100);
+  Serial.println((char*)data);
+  //test1();
   //test2();
-  //delayMicroseconds(1);
   /*
+  delayMicroseconds(1);
+  
   failCount=0;
   for(int i=0;i<testCount;i++)
   {
@@ -220,9 +279,7 @@ void loop()
   Serial.println(testCount);
   Serial.print(F("Failed Test="));
   Serial.println(failCount);
-  Serial.print(F("Error %="));
   */
-  // Serial.println((failCount/100.0)); // this line for some resone causes the code to hold
   delay(1000); // 1 sec delay
   /*
   writeByte(0x1cc,'X'); // 0x02
