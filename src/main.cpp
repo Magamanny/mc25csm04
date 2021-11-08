@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SPI.h>
+#include "mc25csm04.h"
 /*
 // IDE used Platform io
 Pin connection
@@ -57,6 +58,14 @@ if VCC>=3.0 = 8Mhz ,8Mhz ok on 5 volt
 #define WRDI 0x04
 #define RDSR 0x05
 #define WREN 0x06
+uint8_t SPI_transfer(uint8_t reg)
+{
+  return SPI.transfer(reg);
+}
+void delay_ms(uint32_t ms)
+{
+  delay(ms);
+}
 void chipSelect()
 {
 	// CS high time, 200ns
@@ -77,118 +86,6 @@ void chipDeselect()
 	}
   digitalWrite(CS0, HIGH);
 }
-// Read function is quick
-// Write function takes 5ms(this is blocking)
-void writeEnable()
-{
-  chipSelect();
-  SPI.transfer(WREN); // write enable
-  chipDeselect();
-}
-void writeDisable()
-{
-  chipSelect();
-  SPI.transfer(WRDI); // write disable instruction
-  chipDeselect();
-}
-// status is unclear..
-void readStatus()
-{
-  uint8_t rsp;
-  chipSelect();
-  SPI.transfer(RDSR);            // status register
-  rsp = SPI.transfer(0x00); // read response
-  Serial.print("Status Register=");
-  Serial.println(rsp, HEX);
-  chipDeselect();
-}
-void writeStatus(uint8_t st)
-{
-  uint8_t rsp;
-  chipSelect();
-  SPI.transfer(WRSR);            // status register
-  SPI.transfer(st); // read response
-  chipDeselect();
-}
-uint8_t readByte(uint32_t addr)
-{
-  uint8_t addr8;
-  uint8_t response;
-  chipSelect();
-  SPI.transfer(READ);// read instruction
-  // address
-  addr8 = addr>>16;
-  SPI.transfer(addr8);                 // msb
-  addr8 = addr>>8;
-  SPI.transfer(addr8);                 // mid
-  addr8 = addr;
-  SPI.transfer(addr8);                 // lsb
-  response = SPI.transfer(0x00); // read
-  chipDeselect();
-  return response;
-}
-// address is 19 bit, but 24bit are send via spi, see data  
-void writeByte(uint32_t addr, uint8_t data)
-{
-  uint8_t addr8;
-  writeEnable();
-  chipSelect();
-  SPI.transfer(WRITE); // write instruction
-  addr8 = addr>>16;
-  SPI.transfer(addr8);                 // msb
-  addr8 = addr>>8;
-  SPI.transfer(addr8);                 // mid
-  addr8 = addr;
-  SPI.transfer(addr8);                 // lsb
-  SPI.transfer(data);                  // data
-  chipDeselect();
-  delay(5);
-}
-// read string of data for specific length
-void readString(uint32_t addr, uint8_t *data, uint16_t len)
-{
-  uint8_t addr8;
-  chipSelect();
-  SPI.transfer(READ);// read instruction
-  addr8 = addr>>16;
-  SPI.transfer(addr8);                 // msb
-  addr8 = addr>>8;
-  SPI.transfer(addr8);                 // mid
-  addr8 = addr;
-  SPI.transfer(addr8);                 // lsb
-  // read the sting
-  for(uint16_t i=0;i<len;i++)
-  {
-    data[i] = SPI.transfer(0x00); // read
-  }
-  chipDeselect();
-}
-// 8 byte for data 1 for the null terminator
-// use block of 4bytes and write in cunch of 256bytes(as page size is 256bytes)
-void writePage(uint32_t addr, uint8_t data[256],uint32_t len)
-{
-  uint8_t addr8;
-  uint8_t cor;
-  writeEnable();
-  chipSelect();
-  SPI.transfer(WRITE); // write instruction
-  addr8 = addr>>16;
-  SPI.transfer(addr8);                 // msb
-  addr8 = addr>>8;
-  SPI.transfer(addr8);                 // mid
-  addr8 = addr;
-  SPI.transfer(addr8);                 // lsb
-  // the internal address is increased automatically, the lower 3 bit
-  // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
-  cor = addr%256;// handle if addr is not a multiple of 8
-  cor = addr-cor;
-  for(int i=0;i<(len-cor);i++)
-  {
-    SPI.transfer(data[i]);                     // data
-  }
-  chipDeselect();
-  delay(10);
-}
 void test1()
 {
   uint8_t data;
@@ -204,7 +101,7 @@ void test1()
 // page write test
 void test2()
 {
-  uint32_t addr=262144; // this must be a multiple of 8, for page write
+  uint32_t addr=200; // this must be a multiple of 8, for page write
   static uint8_t data_write[256]=
   "Take this kiss upon the brow!\r\n"
   "And, in parting from you now,\r\n"
@@ -252,6 +149,7 @@ void setup()
 
   chipDeselect();
   SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  mc25csm04Init(chipDeselect,chipSelect,SPI_transfer,delay_ms);
   readStatus();
   // one time test
 }
