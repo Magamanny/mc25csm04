@@ -91,13 +91,13 @@ void chipDeselect()
 void writeDisable(const mc25csm04_st *mc25csm04_s);
 void writeEnable(const mc25csm04_st *mc25csm04_s);
 uint8_t readStatus(const mc25csm04_st *mc25csm04_s);
-void writeStatus(const mc25csm04_st *mc25csm04_s,uint8_t st);
+void writeStatus(uint8_t st, const mc25csm04_st *mc25csm04_s);
 
-void writeByte(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data);
-uint8_t readByte(const mc25csm04_st *mc25csm04_s,uint32_t addr);
+void writeByte(uint32_t addr, uint8_t data, const mc25csm04_st *mc25csm04_s);
+uint8_t readByte(uint32_t addr,const mc25csm04_st *mc25csm04_s);
 
-void readString(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t *data, uint16_t len);
-void writePage(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data[8],uint16_t len);
+void readString(uint32_t addr, uint8_t *data, uint16_t len, const mc25csm04_st *mc25csm04_s);
+void writePage(uint32_t addr, uint8_t data[8],uint16_t len, const mc25csm04_st *mc25csm04_s);
 // Write String implementtaion used in a running project
 /*
 void writeString(uint32_t addr,char data[])

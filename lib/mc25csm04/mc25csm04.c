@@ -12,7 +12,7 @@ void writeDisable(const mc25csm04_st *mc25csm04_s)
   mc25csm04_s->SPI_transfer(WRDI); // write disable instruction
   mc25csm04_s->chipDeselect();
 }
-void writeStatus(const mc25csm04_st *mc25csm04_s,uint8_t st)
+void writeStatus(uint8_t st,const mc25csm04_st *mc25csm04_s)
 {
   uint8_t rsp;
   mc25csm04_s->chipSelect();
@@ -31,7 +31,7 @@ uint8_t readStatus(const mc25csm04_st *mc25csm04_s)
   mc25csm04_s->chipDeselect();
   return response;
 }
-void writeByte(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data)
+void writeByte(uint32_t addr, uint8_t data,const mc25csm04_st *mc25csm04_s)
 {
   uint8_t addr8;
   writeEnable(mc25csm04_s);
@@ -51,7 +51,7 @@ void writeByte(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data)
   //digitalWrite(CS0, HIGH);
   mc25csm04_s->delay_ms(5); // max write time 5ms
 }
-uint8_t readByte(const mc25csm04_st *mc25csm04_s,uint32_t addr)
+uint8_t readByte(uint32_t addr,const mc25csm04_st *mc25csm04_s)
 {
   uint8_t addr8;
   uint8_t response;
@@ -70,7 +70,7 @@ uint8_t readByte(const mc25csm04_st *mc25csm04_s,uint32_t addr)
 }
 // multi byte function, native supported by ic
 // read string of data for specific length
-void readString(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t *data, uint16_t len)
+void readString(uint32_t addr, uint8_t *data, uint16_t len,const mc25csm04_st *mc25csm04_s)
 {
   uint8_t addr8;
   mc25csm04_s->chipSelect();
@@ -90,7 +90,7 @@ void readString(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t *data, ui
   mc25csm04_s->chipDeselect();
 }
 // 8 byte for data 1 for the null terminator
-void writePage(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data[256], uint16_t len)
+void writePage(uint32_t addr, uint8_t data[256], uint16_t len,const mc25csm04_st *mc25csm04_s)
 {
   uint8_t addr8;
   uint8_t cor;
