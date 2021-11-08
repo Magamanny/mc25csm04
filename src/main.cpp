@@ -181,6 +181,7 @@ void writePage(uint32_t addr, uint8_t data[256],uint32_t len)
   // the internal address is increased automatically, the lower 3 bit
   // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
   cor = addr%256;// handle if addr is not a multiple of 8
+  cor = addr-cor;
   for(int i=0;i<(len-cor);i++)
   {
     SPI.transfer(data[i]);                     // data
@@ -205,11 +206,11 @@ void test2()
 {
   uint32_t addr=262144; // this must be a multiple of 8, for page write
   static uint8_t data_write[256]=
-  "Take this kiss upon the brow!"
-  "And, in parting from you now,"
-  "Thus much let me avow --"
-  "You are not wrong, who deem"
-  "That my days have been a dream";
+  "Take this kiss upon the brow!\r\n"
+  "And, in parting from you now,\r\n"
+  "Thus much let me avow --\r\n"
+  "You are not wrong, who deem\r\n"
+  "That my days have been a dream\r\n";
   static uint8_t data_read[256]={0}; // creat and init with zero
   writePage(addr,data_write,256);
   readString(addr,data_read,256);
@@ -233,6 +234,8 @@ int test3()
       break; // failed
     }
   }
+  Serial.print("data print=");
+  Serial.print((char*)data_read);
   return fail;
 }
 int failCount;
@@ -259,8 +262,7 @@ void loop()
   readStatus();
   writeStatus(0x80);
   test2();
-  readString(0,data,100);
-  Serial.println((char*)data);
+  test3();
   //test1();
   //test2();
   /*
