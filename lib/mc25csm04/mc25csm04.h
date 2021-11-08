@@ -44,8 +44,8 @@ if VCC>=3.0 = 8Mhz ,8Mhz ok on 5 volt
 #ifdef __cplusplus
 extern "C" {
 #endif
-// I know it can be better, but it will do for now
-// currently only support single mc25csm04.
+// now it can support multiple ics.
+// here better way. happy now.
 typedef struct mc25csm04_st
 {
   void (*chipDeselect)();
@@ -53,11 +53,7 @@ typedef struct mc25csm04_st
   uint8_t (*SPI_transfer)(uint8_t);
   void (*delay_ms)(uint32_t ms);
 } mc25csm04_st;
-// method to initilize the function structure, dont screw it up, keep the order.
-void mc25csm04Init(void (*chipDeselect)(),
-					void (*chipSelect)(),
-					uint8_t (*SPI_transfer)(uint8_t),
-					void (*delay_ms)(uint32_t ms));
+// create the above structure
 // removed as this is casuign problem in c++
 /*
 uint8_t __attribute__((weak)) SPI_transfer(uint8_t reg);
@@ -92,16 +88,16 @@ void chipDeselect()
  */
 // may need to change the name of these functions as they are too general
 // May need to change to addr for large ic
-void writeDisable();
-void writeEnable();
-uint8_t readStatus();
-void writeStatus(uint8_t st);
+void writeDisable(const mc25csm04_st *mc25csm04_s);
+void writeEnable(const mc25csm04_st *mc25csm04_s);
+uint8_t readStatus(const mc25csm04_st *mc25csm04_s);
+void writeStatus(const mc25csm04_st *mc25csm04_s,uint8_t st);
 
-void writeByte(uint32_t addr, uint8_t data);
-uint8_t readByte(uint32_t addr);
+void writeByte(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data);
+uint8_t readByte(const mc25csm04_st *mc25csm04_s,uint32_t addr);
 
-void readString(uint32_t addr, uint8_t *data, uint16_t len);
-void writePage(uint32_t addr, uint8_t data[8],uint16_t len);
+void readString(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t *data, uint16_t len);
+void writePage(const mc25csm04_st *mc25csm04_s,uint32_t addr, uint8_t data[8],uint16_t len);
 // Write String implementtaion used in a running project
 /*
 void writeString(uint32_t addr,char data[])
