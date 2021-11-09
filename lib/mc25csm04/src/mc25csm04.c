@@ -107,10 +107,10 @@ void writePage(uint32_t addr, uint8_t data[256], uint16_t len,const mc25csm04_st
   // the internal address is increased automatically, the lower 3 bit
   // this means that the address must be a multiple of 8, of all 8 bytes to be writen in 1 go
   cor = addr % 256;                     // handle if addr is not a multiple of 8
-  cor = 256 - cor;
-  if(len > cor)
+  cor = 255 - cor;
+  if(len > (cor+1))
   {
-    len = cor;
+    len = cor+1;
   }
   for (int i = 0; i < len; i++) // handle if addr is not a multiple of 8
   {

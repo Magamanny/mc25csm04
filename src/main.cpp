@@ -112,7 +112,7 @@ void test1()
 // page write test
 void test2()
 {
-  uint32_t addr=100; // this must be a multiple of 8, for page write
+  uint32_t addr_r=200,addr_w=200; // this must be a multiple of 8, for page write
   static uint8_t data_write[256]=
   "Take this kiss upon the brow!\r\n"
   "And, in parting from you now,\r\n"
@@ -120,15 +120,15 @@ void test2()
   "You are not wrong, who deem\r\n"
   "That my days have been a dream\r\n";
   static uint8_t data_read[256]={0}; // creat and init with zero
-  writePage(addr,data_write,256,&mc25csm04_s);
-  readString(addr,data_read,256,&mc25csm04_s);
+  writePage(addr_w,data_write,256,&mc25csm04_s);
+  readString(addr_r,data_read,256,&mc25csm04_s);
   Serial.print(F("Data="));
   Serial.println((char*)data_read);
 }
 int test3()
 {
   uint8_t fail=false;
-  uint16_t addr=8; // this must be a multiple of 8, for page write
+  uint16_t addr=0; // this must be a multiple of 8, for page write
   uint8_t data_write[]={'A','L','I','-','R','@','D','*'};
   uint8_t data_read[10]={0}; // creat and init with zero
   data_write[7] = rand()%255;
@@ -170,7 +170,7 @@ void loop()
   readStatus(&mc25csm04_s);
   writeStatus(0x80,&mc25csm04_s);
   test2();
-  test3();
+  //test3();
   //test1();
   //test2();
   /*
